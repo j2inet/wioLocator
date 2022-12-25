@@ -21,7 +21,8 @@ import android.view.View
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity;
-import com.google.android.gms.location.*;
+import com.google.android.gms.location.*
+//import com.google.android.gms.location.*;
 //import kotlinx.serialization.Serializable;
 import java.io.*
 
