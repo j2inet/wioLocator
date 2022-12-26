@@ -22,6 +22,15 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity;
 import com.google.android.gms.location.*
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+
+
+//import kotlinx.serialization.json.Json
+//import kotlinx.serialization.json.JsonNull.serializer
 //import com.google.android.gms.location.*;
 //import kotlinx.serialization.Serializable;
 import java.io.*
@@ -46,19 +55,10 @@ class MainActivity : AppCompatActivity() {
             const val COLUMN_NAME_ALTITUDE = "altitude"
             const val COLUMN_NAME_HORIZONTALACCURACY = "ha"
             const val COLUMN_NAME_VERTICALACCURACY = "va"
+            const val COLUMN_NAME_FREQUECY = "frequency"
+            const val COLUMN_NAME_DATETIME = "timestamp";
 
-            const val CREATE_TABLE_QUERY = "CREATE TABLE ${ScanItemContract.TABLE_NAME} ("+
-                    "${BaseColumns._ID} INTEGER PRIMARY KEY," +
-                    "${COLUMN_NAME_BSSID}  TEXT NOT NULL, "+
-                    "${COLUMN_NAME_SSID}  TEXT, "+
-                    "${COLUMN_NAME_LEVEL}  INT, "+
-                    "${COLUMN_NAME_CAPABILITIES}  TEXT, "+
-                    "${COLUMN_NAME_LATITUDE}  REAL NOT NULL, "+
-                    "${COLUMN_NAME_LONGITUDE}  REAL NOT NULL, "+
-                    "${COLUMN_NAME_ALTITUDE}  REAL, "+
-                    "${COLUMN_NAME_HORIZONTALACCURACY}  REAL, "+
-                    "${COLUMN_NAME_VERTICALACCURACY}  REAL, "+
-                ")"
+
         }
     }
 
@@ -103,7 +103,7 @@ class MainActivity : AppCompatActivity() {
 
                 val scanResultList: List<ScanItem> = ArrayList<ScanItem>(result.size)
                 for (r in result) {
-                    var item = ScanItem()
+                    var item = ScanItem(r.BSSID)
                     item.apply {
                         latitude = currentLocation.latitude
                         longitude = currentLocation.longitude
@@ -113,15 +113,18 @@ class MainActivity : AppCompatActivity() {
                         if (currentLocation.hasVerticalAccuracy()) {
                             verticalAccuracy = currentLocation.verticalAccuracyMeters
                         }
+                        altitude = currentLocation.altitude.toFloat()
                         BSSID = r.BSSID
                         SSID = r.SSID
                         level = r.level
                         capabilities = r.capabilities
-                        r.frequency = frequency
+                        frequency = r.frequency
+                        datetime = currentLocation.time
                     }
                     mainActivity.scanItemDataHelper.insert(item)
                 }
                 mainActivity.currentLocation = null
+                mainActivity.addNewEntryCount(result.size)
                 Toast.makeText(mainActivity, "scan Saved", Toast.LENGTH_SHORT).show();
             }
             wifiManager.startScan()
@@ -144,7 +147,7 @@ class MainActivity : AppCompatActivity() {
         val locationRequest = LocationRequest.create()?.apply {
             interval = 10_000
             fastestInterval = 10_000
-            smallestDisplacement = 30.0f
+            smallestDisplacement = 10.0f
             priority = LocationRequest.PRIORITY_HIGH_ACCURACY
         }
 
@@ -213,11 +216,13 @@ class MainActivity : AppCompatActivity() {
             registerReceiver(this.wifiReceiver, IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION))
             wifiManager.startScan()
         }
+        getLocationUpdates()
         super.onResume()
     }
 
     override fun onPause() {
-        unregisterReceiver(this.wifiReceiver);
+        //unregisterReceiver(this.wifiReceiver);
+        fusedLocationClient.removeLocationUpdates(locationCallback)
         super.onPause()
     }
 
@@ -261,17 +266,19 @@ class MainActivity : AppCompatActivity() {
                     if(intentData?.data != null) {
                         var uri: Uri = intentData?.data as Uri;
                         if(uri!=null) {
-
                             println(uri.toString());
+                            var itemList = scanItemDataHelper.retrieveAll().toTypedArray()
+                            var jlist:ArrayList<JsonObject> = ArrayList<JsonObject>()
+                            for(item in itemList) {
+                                jlist.add(item.getJobject())
+                            }
+                            //var dataString = Json.encodeToString(itemList[0])
+                            var dataString = jlist.toString()
                             val os: OutputStream? = contentResolver.openOutputStream(uri)
                             if(os != null) {
                                 val pw = OutputStreamWriter(os);
-                                try {
-                                    var itemList = scanItemDataHelper.retrieveAll()
+                                try { pw.write(dataString);
 
-                                    pw.write("Success\r\n");
-                                    isScanning = true;
-                                    wifiManager.startScan()
                                 }finally {
                                     pw.flush()
                                     os.close()

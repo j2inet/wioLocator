@@ -8,17 +8,19 @@ import android.provider.BaseColumns
 import android.util.Log
 import kotlin.math.sign
 
-
+//https://developer.android.com/training/data-storage/sqlite
 const val DATABASE_NAME = "scan_item_database"
 const val DATABASE_VERSION = 1
 
 class ScanItemDataHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
 
     object ScanItemContract : BaseColumns {
-        const val DATABASE_VERSION = 1
+        const val DATABASE_VERSION = 2
         const val DATABASE_NAME = "ScanItem.db"
 
         const val TABLE_NAME = "scan_item"
+
+
         const val COLUMN_NAME_BSSID = "bssid"
         const val COLUMN_NAME_SSID = "ssid";
         const val COLUMN_NAME_LEVEL = "level"
@@ -28,13 +30,17 @@ class ScanItemDataHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_
         const val COLUMN_NAME_ALTITUDE = "altitude"
         const val COLUMN_NAME_HORIZONTALACCURACY = "ha"
         const val COLUMN_NAME_VERTICALACCURACY = "va"
+        const val COLUMN_NAME_FREQUECY = "frequency"
+        const val COLUMN_NAME_DATETIME = "timestamp";
 
         const val CREATE_TABLE_QUERY = "CREATE TABLE ${MainActivity.Companion.ScanItemContract.TABLE_NAME} ("+
                 "${BaseColumns._ID} INTEGER PRIMARY KEY," +
                 "${MainActivity.Companion.ScanItemContract.COLUMN_NAME_BSSID}  TEXT NOT NULL, "+
-                "${MainActivity.Companion.ScanItemContract.COLUMN_NAME_SSID}  TEXT, "+
+                "${MainActivity.Companion.ScanItemContract.COLUMN_NAME_SSID}  TEXT NOT NULL, "+
                 "${MainActivity.Companion.ScanItemContract.COLUMN_NAME_LEVEL}  INT, "+
                 "${MainActivity.Companion.ScanItemContract.COLUMN_NAME_CAPABILITIES}  TEXT, "+
+                "${MainActivity.Companion.ScanItemContract.COLUMN_NAME_FREQUECY}  INT, "+
+                "${MainActivity.Companion.ScanItemContract.COLUMN_NAME_DATETIME} INT," +
                 "${MainActivity.Companion.ScanItemContract.COLUMN_NAME_LATITUDE}  REAL NOT NULL, "+
                 "${MainActivity.Companion.ScanItemContract.COLUMN_NAME_LONGITUDE}  REAL NOT NULL, "+
                 "${MainActivity.Companion.ScanItemContract.COLUMN_NAME_ALTITUDE}  REAL, "+
@@ -70,6 +76,8 @@ class ScanItemDataHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_
             put(ScanItemContract.COLUMN_NAME_CAPABILITIES, si.capabilities)
             put(ScanItemContract.COLUMN_NAME_HORIZONTALACCURACY, si.horizontalAccuracy)
             put(ScanItemContract.COLUMN_NAME_VERTICALACCURACY, si.verticalAccuracy)
+            put(ScanItemContract.COLUMN_NAME_FREQUECY, si.frequency)
+            put(ScanItemContract.COLUMN_NAME_DATETIME, si.datetime)
         }
         val newRow = db?.insert(ScanItemContract.TABLE_NAME, null, values)
         si.ID = newRow
@@ -90,14 +98,16 @@ class ScanItemDataHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_
         val retreivalProjection = arrayOf(
             BaseColumns._ID,
             ScanItemContract.COLUMN_NAME_BSSID,
+            ScanItemContract.COLUMN_NAME_SSID,
             ScanItemContract.COLUMN_NAME_ALTITUDE,
             ScanItemContract.COLUMN_NAME_LONGITUDE,
             ScanItemContract.COLUMN_NAME_LATITUDE,
             ScanItemContract.COLUMN_NAME_LEVEL,
-            ScanItemContract.COLUMN_NAME_SSID,
             ScanItemContract.COLUMN_NAME_CAPABILITIES,
             ScanItemContract.COLUMN_NAME_HORIZONTALACCURACY,
-            ScanItemContract.COLUMN_NAME_VERTICALACCURACY
+            ScanItemContract.COLUMN_NAME_VERTICALACCURACY,
+            ScanItemContract.COLUMN_NAME_DATETIME,
+            ScanItemContract.COLUMN_NAME_FREQUECY
         )
 
         var selection:String? = null //Not filtering
@@ -111,11 +121,19 @@ class ScanItemDataHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_
             while(moveToNext()) {
                 val si = ScanItem()
                 si.ID = getLong(getColumnIndexOrThrow(BaseColumns._ID))
+                si.SSID = getString(getColumnIndexOrThrow(ScanItemContract.COLUMN_NAME_SSID))
+                si.BSSID = getString(getColumnIndexOrThrow(ScanItemContract.COLUMN_NAME_BSSID))
+
                 si.longitude = getDouble(getColumnIndexOrThrow(ScanItemContract.COLUMN_NAME_LONGITUDE))
                 si.latitude = getDouble(getColumnIndexOrThrow(ScanItemContract.COLUMN_NAME_LATITUDE))
-                si.BSSID = getString(getColumnIndexOrThrow(ScanItemContract.COLUMN_NAME_BSSID))
+                si.altitude = getDouble(getColumnIndexOrThrow(ScanItemContract.COLUMN_NAME_ALTITUDE)).toFloat()
+                si.horizontalAccuracy = getDouble(getColumnIndexOrThrow(ScanItemContract.COLUMN_NAME_HORIZONTALACCURACY)).toFloat()
+                si.verticalAccuracy = getDouble(getColumnIndexOrThrow(ScanItemContract.COLUMN_NAME_VERTICALACCURACY)).toFloat()
                 si.capabilities = getString(getColumnIndexOrThrow(ScanItemContract.COLUMN_NAME_CAPABILITIES))
                 si.level = getInt(getColumnIndexOrThrow(ScanItemContract.COLUMN_NAME_LEVEL))
+
+                si.frequency = getInt(getColumnIndexOrThrow(ScanItemContract.COLUMN_NAME_FREQUECY))
+                si.datetime = getLong(getColumnIndexOrThrow(ScanItemContract.COLUMN_NAME_DATETIME))
 
                 retVal.add(si);
             }
