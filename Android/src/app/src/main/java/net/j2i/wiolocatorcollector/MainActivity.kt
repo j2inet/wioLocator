@@ -3,6 +3,7 @@ package net.j2i.wiolocatorcollector
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.app.PictureInPictureParams
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -18,6 +19,7 @@ import android.os.Looper
 import android.provider.BaseColumns
 import android.util.Log
 import android.view.View
+import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity;
@@ -34,7 +36,9 @@ import kotlinx.serialization.json.JsonObject
 //import com.google.android.gms.location.*;
 //import kotlinx.serialization.Serializable;
 import java.io.*
-
+import java.math.BigInteger
+import java.util.*
+import kotlin.collections.ArrayList
 
 
 const val TAG = "MainActivity"
@@ -57,6 +61,9 @@ class MainActivity : AppCompatActivity() {
             const val COLUMN_NAME_VERTICALACCURACY = "va"
             const val COLUMN_NAME_FREQUECY = "frequency"
             const val COLUMN_NAME_DATETIME = "timestamp";
+            const val COLUMN_NAME_SESSIONID = "sessionID"
+            const val COLUMN_NAME_CLIENTID = "clientID"
+            const val COLUMN_NAME_LOCATIONLABEL = "locationlabel"
 
 
         }
@@ -81,17 +88,23 @@ class MainActivity : AppCompatActivity() {
     lateinit var wifiInfo:WifiInfo
 
     lateinit var newEntryDisplayText:TextView
+    lateinit var editTextLabel:EditText
 
     var newEntryCount = 0;
 
     var currentLocation: Location? = null
 
+    var locationLabel:String = ""
+    var clientID:String = "00000000-00000000-00000000-00000000"
+
     class WifiReceiver:BroadcastReceiver {
+        var SessionID:String = "";
         var wifiManager:WifiManager
         var mainActivity:MainActivity
         constructor(wifiManager:WifiManager, mainActivity:MainActivity) {
             this.wifiManager = wifiManager;
             this.mainActivity = mainActivity
+            this.SessionID =  UUID.randomUUID().toString()
         }
 
         override fun onReceive(p0: Context?, intent: Intent?) {
@@ -102,9 +115,12 @@ class MainActivity : AppCompatActivity() {
                 Log.d(TAG, "results received");
 
                 val scanResultList: List<ScanItem> = ArrayList<ScanItem>(result.size)
+
                 for (r in result) {
                     var item = ScanItem(r.BSSID)
                     item.apply {
+                        sessionID = SessionID
+                        clientID = mainActivity.clientID
                         latitude = currentLocation.latitude
                         longitude = currentLocation.longitude
                         if (currentLocation.hasAccuracy()) {
@@ -117,9 +133,10 @@ class MainActivity : AppCompatActivity() {
                         BSSID = r.BSSID
                         SSID = r.SSID
                         level = r.level
-                        capabilities = r.capabilities
+                        capabilities = r.capabilities //http://w1.fi/cgit/hostap/tree/wpa_supplicant/ctrl_iface.c?id=7b42862ac87f333b0efb0f0bae822dcdf606bc69#n2169
                         frequency = r.frequency
                         datetime = currentLocation.time
+                        locationLabel = mainActivity.locationLabel
                     }
                     mainActivity.scanItemDataHelper.insert(item)
                 }
@@ -147,7 +164,7 @@ class MainActivity : AppCompatActivity() {
         val locationRequest = LocationRequest.create()?.apply {
             interval = 10_000
             fastestInterval = 10_000
-            smallestDisplacement = 10.0f
+            smallestDisplacement = 3.0f
             priority = LocationRequest.PRIORITY_HIGH_ACCURACY
         }
 
@@ -191,11 +208,44 @@ class MainActivity : AppCompatActivity() {
             wifiManager.startScan();
         }
     }
+
+
+    fun hashString(s:String): ULong {
+        val A:ULong =  54059u ;
+        val B:ULong = 76963u ;
+        val C:ULong = 86969u;
+        val FIRSTH:ULong = 37u;
+        var h = FIRSTH;
+        var stringBytes = s.toByteArray()
+        for ( i in 0..stringBytes.size-1) {
+            var c = stringBytes[i].toULong();
+            h = ((h * A) xor (((c) * B))) and 0xFFFFFFFFFFFFFFFFu;
+        }
+        return h;
+    }
+
+    override fun onUserLeaveHint() {
+        val pictureInPictureParams = PictureInPictureParams.Builder().setAspectRatio(rational).build()
+        enterPictureInPictureMode(pictureInPictureParams)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
+        var x = hashString("joel");
+        var y = x.toString(16)
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        newEntryDisplayText = findViewById(R.id.entryCountTextDisplay)
+        val pref = getSharedPreferences("APP_PREFERENCES", Context.MODE_PRIVATE);
+        this.clientID = pref.getString("ClientID", "")!!
+        if(this.clientID == "") {
+            val editor = pref.edit()
+            this.clientID = UUID.randomUUID().toString()
+            editor.putString("ClientID", this.clientID)
+            editor.commit()
+        }
 
+
+        newEntryDisplayText = findViewById(R.id.entryCountTextDisplay)
+        editTextLabel = findViewById(R.id.edtTextLabel);
         this.scanItemDataHelper = ScanItemDataHelper(this)
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
@@ -234,6 +284,10 @@ class MainActivity : AppCompatActivity() {
         }
 
 
+    }
+
+    fun onUpdateLabelClicked(button:View) {
+        this.locationLabel = editTextLabel.text.toString()
     }
 
     fun onStopRecordingClicked(stopButton:View) {

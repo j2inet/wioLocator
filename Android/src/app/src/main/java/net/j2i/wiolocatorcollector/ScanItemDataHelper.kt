@@ -32,9 +32,14 @@ class ScanItemDataHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_
         const val COLUMN_NAME_VERTICALACCURACY = "va"
         const val COLUMN_NAME_FREQUECY = "frequency"
         const val COLUMN_NAME_DATETIME = "timestamp";
+        const val COLUMN_NAME_SESSIONID = "sessionID"
+        const val COLUMN_NAME_LOCATIONLABEL = "locationlabel"
+        const val COLUMN_NAME_CLIENTID = "clientID"
 
         const val CREATE_TABLE_QUERY = "CREATE TABLE ${MainActivity.Companion.ScanItemContract.TABLE_NAME} ("+
                 "${BaseColumns._ID} INTEGER PRIMARY KEY," +
+                "${MainActivity.Companion.ScanItemContract.COLUMN_NAME_SESSIONID}  TEXT, "+
+                "${MainActivity.Companion.ScanItemContract.COLUMN_NAME_CLIENTID}  TEXT, "+
                 "${MainActivity.Companion.ScanItemContract.COLUMN_NAME_BSSID}  TEXT NOT NULL, "+
                 "${MainActivity.Companion.ScanItemContract.COLUMN_NAME_SSID}  TEXT NOT NULL, "+
                 "${MainActivity.Companion.ScanItemContract.COLUMN_NAME_LEVEL}  INT, "+
@@ -45,7 +50,8 @@ class ScanItemDataHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_
                 "${MainActivity.Companion.ScanItemContract.COLUMN_NAME_LONGITUDE}  REAL NOT NULL, "+
                 "${MainActivity.Companion.ScanItemContract.COLUMN_NAME_ALTITUDE}  REAL, "+
                 "${MainActivity.Companion.ScanItemContract.COLUMN_NAME_HORIZONTALACCURACY}  REAL, "+
-                "${MainActivity.Companion.ScanItemContract.COLUMN_NAME_VERTICALACCURACY}  REAL "+
+                "${MainActivity.Companion.ScanItemContract.COLUMN_NAME_VERTICALACCURACY}  REAL, "+
+                "${MainActivity.Companion.ScanItemContract.COLUMN_NAME_LOCATIONLABEL}  REAL "+
                 ")"
         const val DELETE_TABLES_QUERY = "DROP TABLE IF EXISTS ${TABLE_NAME}";
     }
@@ -68,6 +74,8 @@ class ScanItemDataHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_
         val db = this.writableDatabase
         val values = ContentValues().apply {
             put(ScanItemContract.COLUMN_NAME_SSID, si.SSID)
+            put(ScanItemContract.COLUMN_NAME_SESSIONID, si.sessionID)
+            put(ScanItemContract.COLUMN_NAME_CLIENTID, si.clientID)
             put(ScanItemContract.COLUMN_NAME_BSSID, si.BSSID)
             put(ScanItemContract.COLUMN_NAME_ALTITUDE, si.altitude)
             put(ScanItemContract.COLUMN_NAME_LONGITUDE, si.longitude)
@@ -78,6 +86,7 @@ class ScanItemDataHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_
             put(ScanItemContract.COLUMN_NAME_VERTICALACCURACY, si.verticalAccuracy)
             put(ScanItemContract.COLUMN_NAME_FREQUECY, si.frequency)
             put(ScanItemContract.COLUMN_NAME_DATETIME, si.datetime)
+            put(ScanItemContract.COLUMN_NAME_LOCATIONLABEL, si.locationLabel)
         }
         val newRow = db?.insert(ScanItemContract.TABLE_NAME, null, values)
         si.ID = newRow
@@ -98,6 +107,8 @@ class ScanItemDataHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_
         val retreivalProjection = arrayOf(
             BaseColumns._ID,
             ScanItemContract.COLUMN_NAME_BSSID,
+            ScanItemContract.COLUMN_NAME_SESSIONID,
+            ScanItemContract.COLUMN_NAME_CLIENTID,
             ScanItemContract.COLUMN_NAME_SSID,
             ScanItemContract.COLUMN_NAME_ALTITUDE,
             ScanItemContract.COLUMN_NAME_LONGITUDE,
@@ -107,7 +118,8 @@ class ScanItemDataHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_
             ScanItemContract.COLUMN_NAME_HORIZONTALACCURACY,
             ScanItemContract.COLUMN_NAME_VERTICALACCURACY,
             ScanItemContract.COLUMN_NAME_DATETIME,
-            ScanItemContract.COLUMN_NAME_FREQUECY
+            ScanItemContract.COLUMN_NAME_FREQUECY,
+            ScanItemContract.COLUMN_NAME_LOCATIONLABEL
         )
 
         var selection:String? = null //Not filtering
@@ -134,6 +146,10 @@ class ScanItemDataHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_
 
                 si.frequency = getInt(getColumnIndexOrThrow(ScanItemContract.COLUMN_NAME_FREQUECY))
                 si.datetime = getLong(getColumnIndexOrThrow(ScanItemContract.COLUMN_NAME_DATETIME))
+                si.sessionID = getString(getColumnIndexOrThrow(ScanItemContract.COLUMN_NAME_SESSIONID))
+                si.clientID = getString(getColumnIndexOrThrow(ScanItemContract.COLUMN_NAME_CLIENTID))
+
+                si.locationLabel = getString(getColumnIndexOrThrow(ScanItemContract.COLUMN_NAME_LOCATIONLABEL))
 
                 retVal.add(si);
             }

@@ -3,6 +3,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import java.util.*
 
 
 @Serializable
@@ -22,7 +23,11 @@ import kotlinx.serialization.json.JsonPrimitive
             "horizontalAccuracy" to JsonPrimitive(horizontalAccuracy),
             "verticalAccuracy" to JsonPrimitive(verticalAccuracy),
             "datetime" to JsonPrimitive(datetime),
-            "frequency" to JsonPrimitive(frequency)
+            "frequency" to JsonPrimitive(frequency),
+            "sessionID" to JsonPrimitive(sessionID),
+            "clientID" to JsonPrimitive(clientID),
+            "locationLabel" to JsonPrimitive(locationLabel)
+
             )
     )
 
@@ -38,4 +43,8 @@ import kotlinx.serialization.json.JsonPrimitive
     var altitude: Float? = -1.0f
     var verticalAccuracy: Float? = -1.0f
     var datetime:Long = 0
+    var locationLabel:String = ""
+    var sessionID : String  = "00000000-00000000-00000000-00000000"
+    var clientID : String  = "00000000-00000000-00000000-00000000"
+
 }
